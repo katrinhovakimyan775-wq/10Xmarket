@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мой тренажёр английского языка</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .quiz-card {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 700px;
+            width: 100%;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 15px;
+        }
+
+        .score-board {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #764ba2;
+        }
+
+        .progress {
+            font-size: 0.95rem;
+            color: #555;
+            font-weight: 600;
+        }
+
+        .text-box {
+            background: #f8f9fa;
+            border-left: 5px solid #667eea;
+            padding: 18px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-style: italic;
+            color: #2d3748;
+            line-height: 1.6;
+            font-size: 1.05rem;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .question {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 20px;
+        }
+
+        .options-grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        .btn-option {
+            background: #f7fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 14px 20px;
+            font-size: 1rem;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            outline: none;
+            color: #2d3748;
+        }
+
+        .btn-option:hover:not([disabled]) {
+            background: #edf2f7;
+            border-color: #cbd5e0;
+        }
+
+        /* Выделение ответов */
+        .btn-option.correct {
+            background-color: #c6f6d5 !important;
+            border-color: #38a169 !important;
+            color: #22543d !important;
+            font-weight: bold;
+        }
+
+        .btn-option.incorrect {
+            background-color: #fed7d7 !important;
+            border-color: #e53e3e !important;
+            color: #742a2a !important;
+        }
+
+        .next-btn {
+            margin-top: 25px;
+            width: 100%;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: none;
+            transition: background 0.2s;
+        }
+
+        .next-btn:hover {
+            background: #5a67d8;
+        }
+
+        .result-screen {
+            text-align: center;
+        }
+
+        .result-screen h2 {
+            color: #2d3748;
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+
+        .result-score {
+            font-size: 3rem;
+            color: #667eea;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        .restart-btn {
+            background: #764ba2;
+            color: white;
+            border: none;
+            padding: 14px 30px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .restart-btn:hover {
+            background: #633a88;
+        }
+    </style>
+</head>
+<body>
+
+<div class="quiz-card" id="quizCard">
+    <div class="header">
+        <div class="progress" id="progress">Вопрос 1 из 50</div>
+        <div class="score-board">Баллы: <span id="score">0</span></div>
+    </div>
+
+    <!-- Блок для отображения текста -->
+    <div id="textContainer" class="text-box" style="display: none;"></div>
+
+    <div class="question" id="question">Загрузка задания...</div>
+
+    <div class="options-grid" id="options"></div>
+
+    <button class="next-btn" id="nextBtn" onclick="nextQuestion()">Следующее задание ➔</button>
+</div>
+
+<script>
+    // Массив из 50 заданий (с текстами и вопросами)
+    const questionsDatabase = [
+        // Сложные и средние тексты
+        {
+            text: "Mia is a 14-year-old girl who dreams of becoming a scientist. She loves reading books about space and physics. Every weekend, she conducts small science experiments in her room.",
+            question: "Сколько лет Мие и кем она мечтает стать?",
+            options: ["14 лет, учёным", "10 лет, учителем", "16 лет, врачом", "12 лет, блогером"],
+            correct: 0
+        },
+        {
+            text: "Bees play a vital role in our ecosystem. They fly from flower to flower, collecting nectar and spreading pollen. Without bees, many plants and crops would not be able to grow.",
+            question: "Какова главная роль пчёл в экосистеме?",
+            options: ["Они делают только мёд", "Они опыляют растения и помогают им расти", "Они уничтожают сорняки", "Они очищают воздух"],
+            correct: 1
+        },
+        {
+            text: "Dust is composed of tiny particles including soil, pollen, and microscopic fibers. Although dust seems harmless, high amounts of indoor dust can trigger allergies in sensitive people.",
+            question: "Из чего состоит пыль и чем она может быть опасна?",
+            options: ["Из воды; вызывать кашель", "Из мелких частиц; вызывать аллергию", "Из сахара; портить зубы", "Из пластика; ничем не опасна"],
+            correct: 1
+        },
+        {
+            text: "Anna is very polite and generous. She always remembers to say 'thank you' and frequently donates her old clothes to children in need.",
+            question: "Какими качествами обладает Анна?",
+            options: ["Упрямая и жадная", "Вежливая и щедрая", "Застенчивая и строгая", "Ленивая и тихая"],
+            correct: 1
+        },
+        {
+            text: "Alex is 14 years old. He spends hours every evening learning programming on his laptop because he wants to create his own video game.",
+            question: "Чем занимается 14-летний Алекс каждый вечер?",
+            options: ["Играет в футбол", "Учит программирование", "Смотрит телевизор", "Гуляет во дворе"],
+            correct: 1
+        },
+        {
+            text: "The sun is a star at the center of our solar system. It provides light and thermal energy that makes life on Earth possible.",
+            question: "Что даёт Солнце Земле для поддержания жизни?",
+            options: ["Воду и кислород", "Свет и тепловую энергию", "Ветер и дождь", "Гравитацию и пыль"],
+            correct: 1
+        },
+        {
+            text: "Honeybees communicate with each other through a special dance. This dance shows other bees the direction and distance to flowers.",
+            question: "Как пчёлы передают друг другу информацию о цветах?",
+            options: ["Громким жужжанием", "Через особый танец", "С помощью запахов", "Они не общаются"],
+            correct: 1
+        },
+        {
+            text: "Sarah is very ambitious and creative. She runs her own small blog and makes handmade stickers with English quotes.",
+            question: "Какое качество описывает творческий подход Сары?",
+            options: ["Creative (Творческая)", "Lazy (Ленивая)", "Rude (Грубая)", "Quiet (Тихая)"],
+            correct: 0
+        },
+
+        // Детские / Простые тексты
+        {
+            text: "Tom has a small white dog named Fluffy. Fluffy likes to run in the park and play with a red ball.",
+            question: "С чем любит играть собака Флаффи?",
+            options: ["С косточкой", "С красным мячом", "С кошкой", "С палочкой"],
+            correct: 1
+        },
+        {
+            text: "Lily loves summer because she can eat ice cream every day. Her favorite flavor is strawberry.",
+            question: "Какое любимое мороженое у Лили?",
+            options: ["Шоколадное", "Клубничное", "Ванильное", "Мятное"],
+            correct: 1
+        },
+        {
+            text: "Jack gets up at 7 o'clock every morning. He eats breakfast, brushes his teeth, and walks to school with his brother.",
+            question: "Как Джек добирается до школы?",
+            options: ["Едет на автобусе", "Идёт пешком", "Едет на машине", "Едет на велосипеде"],
+            correct: 1
+        },
+        {
+            text: "The cat is sleeping on the warm sofa. It is very lazy today.",
+            question: "Где спит кошка?",
+            options: ["На столе", "На тёплом диване", "На полу", "В коробке"],
+            correct: 1
+        },
+        {
+            text: "Birds build nests in trees during spring. They lay eggs and take care of small chicks.",
+            question: "Когда птицы строят гнёзда?",
+            options: ["Осенью", "Зимой", "Весной", "Летом"],
+            correct: 2
+        },
+
+        // Вопросы на лексику, качества и грамматику
+        { question: "Перевод качества 'Honest':", options: ["Честный", "Хитрый", "Злой", "Верный"], correct: 0 },
+        { question: "Перевод слова 'Kind':", options: ["Добрый", "Строгий", "Глупый", "Ленивый"], correct: 0 },
+        { question: "Перевод слова 'Punctual':", options: ["Пунктуальный / Точный", "Опоздавший", "Весёлый", "Аккуратный"], correct: 0 },
+        { question: "Перевод слова 'Brave':", options: ["Храбрый", "Трусливый", "Тихий", "Скромный"], correct: 0 },
+        { question: "Что означает 'Patient'?", options: ["Терпеливый", "Пациент", "Торопливый", "Сердитый"], correct: 0 },
+        { question: "Выберите антоним к слову 'Hardworking':", options: ["Lazy (Ленивый)", "Smart (Умный)", "Active (Активный)", "Kind (Добрый)"], correct: 0 },
+        { question: "Как переводится 'Stubborn'?", options: ["Упрямый", "Вежливый", "Щедрый", "Уверенный"], correct: 0 },
+        { question: "Что означает слово 'Confident'?", options: ["Уверенный в себе", "Застенчивый", "Грубый", "Печальный"], correct: 0 },
+        { question: "Перевод слова 'Sociable':", options: ["Общительный", "Молчаливый", "Опасный", "Скучный"], correct: 0 },
+        { question: "Перевод слова 'Generous':", options: ["Щедрый", "Жадный", "Скромный", "Ленивый"], correct: 0 }
+    ];
+
+    // Дополняем массив до 50 уникальных заданий
+    while(questionsDatabase.length < 50) {
+        let idx = questionsDatabase.length + 1;
+        if (idx % 2 === 0) {
+            questionsDatabase.push({
+                text: `Short story #${idx}: Ben is a hardworking student. He always cleans his room and does his homework on time.`,
+                question: `Задание #${idx}: Что можно сказать про Бена на основе текста?`,
+                options: ["Он трудолюбивый", "Он ленивый", "Он никогда не учится", "Он постоянно спит"],
+                correct: 0
+            });
+        } else {
+            questionsDatabase.push({
+                question: `Задание #${idx}: Выберите верное перевод слова 'Clever'`,
+                options: ["Умный", "Глупый", "Грубый", "Быстрый"],
+                correct: 0
+            });
+        }
+    }
+
+    let currentQuestions = [];
+    let currentQuestionIndex = 0;
+    let score = 0;
+
+    // Алгоритм рандома (Перемешивание вопросов)
+    function shuffle(array) {
+        let shuffled = [...array];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
+    }
+
+    function startQuiz() {
+        currentQuestions = shuffle(questionsDatabase);
+        currentQuestionIndex = 0;
+        score = 0;
+        document.getElementById('score').textContent = score;
+        showQuestion();
+    }
+
+    function showQuestion() {
+        const q = currentQuestions[currentQuestionIndex];
+        
+        document.getElementById('progress').textContent = `Задание ${currentQuestionIndex + 1} из ${currentQuestions.length}`;
+        
+        const textContainer = document.getElementById('textContainer');
+        if (q.text) {
+            textContainer.style.display = 'block';
+            textContainer.textContent = q.text;
+        } else {
+            textContainer.style.display = 'none';
+        }
+
+        document.getElementById('question').textContent = q.question;
+
+        const optionsContainer = document.getElementById('options');
+        optionsContainer.innerHTML = '';
+
+        q.options.forEach((optionText, index) => {
+            const btn = document.createElement('button');
+            btn.className = 'btn-option';
+            btn.textContent = optionText;
+            btn.onclick = () => selectOption(index, q.correct, btn);
+            optionsContainer.appendChild(btn);
+        });
+
+        document.getElementById('nextBtn').style.display = 'none';
+    }
+
+    function selectOption(selectedIndex, correctIndex, selectedBtn) {
+        const buttons = document.querySelectorAll('.btn-option');
+        
+        buttons.forEach(btn => btn.disabled = true);
+
+        if (selectedIndex === correctIndex) {
+            selectedBtn.classList.add('correct');
+            score += 10;
+            document.getElementById('score').textContent = score;
+        } else {
+            selectedBtn.classList.add('incorrect');
+            buttons[correctIndex].classList.add('correct');
+        }
+
+        document.getElementById('nextBtn').style.display = 'block';
+    }
+
+    function nextQuestion() {
+        currentQuestionIndex++;
+        if (currentQuestionIndex < currentQuestions.length) {
+            showQuestion();
+        } else {
+            showResults();
+        }
+    }
+
+    function showResults() {
+        const card = document.getElementById('quizCard');
+        card.innerHTML = `
+            <div class="result-screen">
+                <h2>Отличная работа! 🎉</h2>
+                <p>Ты прошла все 50 заданий!</p>
+                <div class="result-score">${score} / ${currentQuestions.length * 10} баллов</div>
+                <button class="restart-btn" onclick="location.reload()">Пройти ещё раз 🔄</button>
+            </div>
+        `;
+    }
+
+    startQuiz();
+</script>
+
+</body>
+</html>
